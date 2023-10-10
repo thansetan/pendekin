@@ -25,7 +25,7 @@ func main() {
 	handler := handler.NewURLHandler(uc)
 
 	// users can only create 10 shortlinks/day, will reset at 00.00 UTC every day
-	rl := middlewares.NewRateLimiter(3, time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC))
+	rl := middlewares.NewRateLimiter(10, time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC))
 
 	http.HandleFunc("/", middlewares.GetClientIP(func(w http.ResponseWriter, r *http.Request) {
 		re := regexp.MustCompile(`\/([A-Za-z0-9-_]+)\b`)
