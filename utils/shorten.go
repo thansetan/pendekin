@@ -21,5 +21,9 @@ func Shorten(longURL string, numOfChar int) (string, error) {
 		return "", err
 	}
 
+	if numOfChar > len(b.Bytes()) {
+		numOfChar = len(b.Bytes())
+	}
+
 	return b.String()[:numOfChar], nil
 }
