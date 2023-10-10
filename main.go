@@ -19,10 +19,13 @@ func main() {
 	logger := helpers.NewLogger("text")
 
 	// unaccessed short link will be deleted after 7 days after its creation
-	urlDB := storage.NewURLDatabase("teste", 7*24*time.Hour)
+	urlDB := storage.NewURLDatabase("urlData", 7*24*time.Hour)
 	repo := repository.NewURLRepository(urlDB)
 	uc := usecase.NewURLUsecase(repo, logger)
 	handler := handler.NewURLHandler(uc)
+
+	// users can only create 10 shortlinks/day, will reset at 00.00 UTC every day
+	rl := middlewares.NewRateLimiter(3, time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC))
 
 	http.HandleFunc("/", middlewares.GetClientIP(func(w http.ResponseWriter, r *http.Request) {
 		re := regexp.MustCompile(`\/([A-Za-z0-9-_]+)\b`)
@@ -40,11 +43,15 @@ func main() {
 	http.HandleFunc("/shorten", middlewares.GetClientIP(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			handler.Save(w, r)
+			rl.RateLimitMiddleware(handler.Save, w, r)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
 	}))
+
+	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "%v", rl.GetUsers())
+	})
 
 	fmt.Println("running at http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
