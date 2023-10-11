@@ -32,17 +32,21 @@ func (b *bucket) refill() {
 }
 
 type rateLimiter struct {
-	limit    int
-	ipMap    map[any]*bucket
-	mu       sync.Mutex
-	refillAt time.Time
+	limit      int
+	ipMap      map[any]*bucket
+	mu         sync.Mutex
+	lastRefill time.Time
+	interval   time.Duration
 }
 
-func NewRateLimiter(limit int, refillAt time.Time) *rateLimiter {
+func NewRateLimiter(limit int, interval time.Duration) *rateLimiter {
 	rl := &rateLimiter{
-		limit:    limit,
-		ipMap:    make(map[any]*bucket),
-		refillAt: refillAt,
+		limit: limit,
+		ipMap: make(map[any]*bucket),
+
+		// not the best practice, but at least it works!
+		lastRefill: time.Date(time.Now().UTC().Year(), time.Now().UTC().Month(), time.Now().UTC().Day(), 0, 0, 0, 0, time.UTC),
+		interval:   interval,
 	}
 
 	go rl.refillAll()
@@ -75,17 +79,13 @@ func (rl *rateLimiter) RateLimitMiddleware(f http.HandlerFunc, w http.ResponseWr
 func (rl *rateLimiter) refillAll() {
 	for {
 		now := time.Now().UTC()
-		if now.Sub(rl.refillAt).Hours() >= 24 {
+		if now.Sub(rl.lastRefill).Nanoseconds() >= rl.interval.Nanoseconds() {
 			rl.mu.Lock()
 			for ip := range rl.ipMap {
 				rl.ipMap[ip].refill()
 			}
 			rl.mu.Unlock()
-			rl.refillAt = rl.refillAt.Add(24 * time.Hour)
+			rl.lastRefill = rl.lastRefill.Add(rl.interval)
 		}
 	}
-}
-
-func (rl *rateLimiter) GetUsers() map[any]*bucket {
-	return rl.ipMap
 }

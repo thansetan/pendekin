@@ -10,8 +10,8 @@ import (
 )
 
 type URL struct {
-	OriginalURL string
-	deleteCh    <-chan time.Time
+	OriginalURL  string
+	lastAccessed time.Time
 }
 
 type URLData struct {
@@ -55,8 +55,8 @@ func (d *URLData) Store(shortURL, longURL string) error {
 	}
 
 	d.data[shortURL] = URL{
-		OriginalURL: longURL,
-		deleteCh:    time.After(d.deleteAfter),
+		OriginalURL:  longURL,
+		lastAccessed: time.Now().UTC(),
 	}
 	return nil
 }
@@ -68,7 +68,7 @@ func (d *URLData) Get(shortURL string) (URL, error) {
 	if data, ok := d.data[shortURL]; !ok {
 		return data, fmt.Errorf("key %s not found", shortURL)
 	} else {
-		data.deleteCh = time.After(d.deleteAfter)
+		data.lastAccessed = time.Now().UTC()
 		d.data[shortURL] = data
 		return data, nil
 	}
@@ -78,11 +78,8 @@ func (d *URLData) delete() {
 	for {
 		d.mu.Lock()
 		for key, url := range d.data {
-			select {
-			case <-url.deleteCh:
+			if time.Now().UTC().Sub(url.lastAccessed) > d.deleteAfter {
 				delete(d.data, key)
-			default:
-				continue
 			}
 		}
 		d.mu.Unlock()
