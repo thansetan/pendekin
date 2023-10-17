@@ -54,25 +54,28 @@ func NewRateLimiter(limit int, interval time.Duration) *rateLimiter {
 	return rl
 }
 
-func (rl *rateLimiter) RateLimitMiddleware(f http.HandlerFunc, w http.ResponseWriter, r *http.Request) {
+func (rl *rateLimiter) RateLimitMiddleware(f http.HandlerFunc) http.HandlerFunc {
 
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-	clientIP := r.Context().Value("user_ip")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rl.mu.Lock()
+		defer rl.mu.Unlock()
+		clientIP := r.Context().Value("user_ip")
 
-	if _, ok := rl.ipMap[clientIP]; !ok {
-		rl.ipMap[clientIP] = newBucket(rl.limit)
+		if _, ok := rl.ipMap[clientIP]; !ok {
+			rl.ipMap[clientIP] = newBucket(rl.limit)
+		}
+
+		bucket := rl.ipMap[clientIP]
+
+		if !bucket.allow() {
+			helpers.ResponseBuilder(w, http.StatusTooManyRequests, "rate limit exceeded", nil)
+			return
+		}
+
+		bucket.take()
+		f.ServeHTTP(w, r)
+
 	}
-
-	bucket := rl.ipMap[clientIP]
-
-	if !bucket.allow() {
-		helpers.ResponseBuilder(w, http.StatusTooManyRequests, "rate limit exceeded", nil)
-		return
-	}
-
-	bucket.take()
-	f.ServeHTTP(w, r)
 
 }
 

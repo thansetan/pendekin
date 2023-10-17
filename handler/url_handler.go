@@ -48,10 +48,11 @@ func (h *urlHandlerImpl) Save(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *urlHandlerImpl) Get(w http.ResponseWriter, r *http.Request, shortURL []byte) {
+func (h *urlHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	origURL, err := h.uc.Get(ctx, string(shortURL))
+	slug := r.PathValue("slug")
+	origURL, err := h.uc.Get(ctx, slug)
 	if err != nil {
 		helpers.ResponseBuilder(w, http.StatusInternalServerError, err.Error(), nil)
 		return
