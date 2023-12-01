@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -14,23 +15,35 @@ import (
 	"github.com/thansetan/pendekin/usecase"
 )
 
-func main() {
+//go:embed templates/new.html
+var newShortURLHTML []byte
 
+func main() {
 	logger := helpers.NewLogger("text")
 
 	// a short link will be deleted automatically 7 days after it was last accessed
-	urlDB := storage.NewURLDatabase("urlData", 7*24*time.Hour)
+	urlDB, err := storage.NewURLDatabase("urlData", 7*24*time.Hour)
+	if err != nil {
+		panic(err)
+	}
+
 	repo := repository.NewURLRepository(urlDB)
 	uc := usecase.NewURLUsecase(repo, logger)
 	handler := handler.NewURLHandler(uc)
 
 	// users/each IP can only create 10 shortlinks/day, will reset at 00.00 UTC every day
-	rl := middlewares.NewRateLimiter(10, 24*time.Hour)
+	rl := middlewares.NewRateLimiter(2, 10*time.Second)
 
 	http.HandleFunc("/", middlewares.GetClientIP(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			home := handler.Home(newShortURLHTML)
+			home.ServeHTTP(w, r)
+			return
+		}
+
 		re := regexp.MustCompile(`^/([A-Za-z0-9-_]{5})$`)
 		if re.MatchString(r.URL.Path) {
-			handler.Get(w, r, []byte(r.URL.Path[1:]))
+			handler.Get(w, r)
 		} else {
 			http.NotFound(w, r)
 		}

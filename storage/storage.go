@@ -9,19 +9,19 @@ import (
 	"time"
 )
 
-type URL struct {
+type url struct {
 	OriginalURL  string
-	lastAccessed time.Time
+	LastAccessed time.Time
 }
 
 type URLData struct {
-	data        map[string]URL
+	data        map[string]url
 	mu          *sync.RWMutex
 	deleteAfter time.Duration
 	fileName    string
 }
 
-func NewURLDatabase(fileName string, deleteAfter time.Duration) *URLData {
+func NewURLDatabase(fileName string, deleteAfter time.Duration) (*URLData, error) {
 	urlData := &URLData{
 		mu:          new(sync.RWMutex),
 		deleteAfter: deleteAfter,
@@ -32,15 +32,15 @@ func NewURLDatabase(fileName string, deleteAfter time.Duration) *URLData {
 	if file != nil {
 		err := gob.NewDecoder(file).Decode(&urlData.data)
 		if err != nil {
-			fmt.Println(err)
+			return urlData, err
 		}
 		go urlData.delete()
-		return urlData
+		return urlData, nil
 	}
 
-	urlData.data = make(map[string]URL)
+	urlData.data = make(map[string]url)
 	go urlData.delete()
-	return urlData
+	return urlData, nil
 }
 
 func (d *URLData) Store(shortURL, longURL string) error {
@@ -54,21 +54,21 @@ func (d *URLData) Store(shortURL, longURL string) error {
 		return nil
 	}
 
-	d.data[shortURL] = URL{
+	d.data[shortURL] = url{
 		OriginalURL:  longURL,
-		lastAccessed: time.Now().UTC(),
+		LastAccessed: time.Now().UTC(),
 	}
 	return nil
 }
 
-func (d *URLData) Get(shortURL string) (URL, error) {
+func (d *URLData) Get(shortURL string) (url, error) {
 	d.mu.Lock()
 	defer d.backup()
 	defer d.mu.Unlock()
 	if data, ok := d.data[shortURL]; !ok {
 		return data, fmt.Errorf("key %s not found", shortURL)
 	} else {
-		data.lastAccessed = time.Now().UTC()
+		data.LastAccessed = time.Now().UTC()
 		d.data[shortURL] = data
 		return data, nil
 	}
@@ -78,7 +78,7 @@ func (d *URLData) delete() {
 	for {
 		d.mu.Lock()
 		for key, url := range d.data {
-			if time.Now().UTC().Sub(url.lastAccessed) > d.deleteAfter {
+			if time.Since(url.LastAccessed) > d.deleteAfter {
 				delete(d.data, key)
 			}
 		}
@@ -93,4 +93,7 @@ func (d *URLData) backup() {
 	}
 	defer file.Close()
 	err = gob.NewEncoder(file).Encode(d.data)
+	if err != nil {
+		fmt.Println(err)
+	}
 }

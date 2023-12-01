@@ -2,7 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	_ "embed"
 
 	"github.com/thansetan/pendekin/dto"
 	"github.com/thansetan/pendekin/helpers"
@@ -38,6 +41,11 @@ func (h *urlHandlerImpl) Save(w http.ResponseWriter, r *http.Request) {
 
 	shortURL, err := h.uc.Save(ctx, data.OriginalURL)
 	if err != nil {
+		var errResp helpers.ResponseError
+		if errors.As(err, &errResp) {
+			helpers.ResponseBuilder(w, errResp.Code(), errResp.Error(), nil)
+			return
+		}
 		helpers.ResponseBuilder(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
@@ -48,14 +56,27 @@ func (h *urlHandlerImpl) Save(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *urlHandlerImpl) Get(w http.ResponseWriter, r *http.Request, shortURL []byte) {
+func (h *urlHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	shortURL := r.URL.Path[1:]
 	origURL, err := h.uc.Get(ctx, string(shortURL))
 	if err != nil {
-		helpers.ResponseBuilder(w, http.StatusInternalServerError, err.Error(), nil)
+		var errResp helpers.ResponseError
+		if errors.As(err, &errResp) {
+			helpers.ResponseBuilder(w, errResp.Code(), errResp.Error(), nil)
+			return
+		}
+		helpers.ResponseBuilder(w, http.StatusFound, err.Error(), nil)
 		return
 	}
 
-	http.Redirect(w, r, origURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, origURL, http.StatusMovedPermanently)
+}
+
+func (h *urlHandlerImpl) Home(html []byte) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(html)
+	}
 }
