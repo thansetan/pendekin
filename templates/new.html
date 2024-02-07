@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Pendekin</title>
+        <script src="https://unpkg.com/htmx.org@1.9.9"></script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/client-side-templates.js"></script>
+        <script src="https://unpkg.com/mustache@latest"></script>
+        <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+        <style>
+            .centered {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                flex-direction: column;
+                text-align: center;
+            }
+
+            #shortURL {
+                font-size: 2rem;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="centered">
+            <div hx-ext="client-side-templates">
+                <form
+                    hx-post="http://localhost:8080/shorten"
+                    hx-ext="json-enc"
+                    hx-swap="innerHTML"
+                    hx-target="#shortURL"
+                    mustache-template="short-url"
+                    _="on htmx:responseError
+                if detail.xhr.status===429
+                alert(`Rate limit exceeded, try again later (you're limited to creating 10 short URLs every 24 hours)`)
+                else
+                alert(`${JSON.parse(detail.xhr.response).error}`)"
+                >
+                    <input
+                        name="original_url"
+                        type="url"
+                        placeholder="URL goes here..."
+                        required
+                    />
+                    <input type="submit" value="shorten" />
+                </form>
+                <div
+                    id="shortURL"
+                ></div>
+                <template id="short-url">
+                    Short URL:
+                    <a href="{{data.short_url}}">{{data.short_url}}</a>
+                </template>
+            </div>
+        </div>
+    </body>
+</html>

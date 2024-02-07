@@ -81,8 +81,7 @@ func (rl *rateLimiter) RateLimitMiddleware(f http.HandlerFunc) http.HandlerFunc 
 
 func (rl *rateLimiter) refillAll() {
 	for {
-		now := time.Now().UTC()
-		if now.Sub(rl.lastRefill).Nanoseconds() >= rl.interval.Nanoseconds() {
+		if time.Now().UTC().Sub(rl.lastRefill) >= rl.interval {
 			rl.mu.Lock()
 			for ip := range rl.ipMap {
 				rl.ipMap[ip].refill()
