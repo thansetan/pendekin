@@ -58,20 +58,20 @@ func (h *urlHandlerImpl) Save(w http.ResponseWriter, r *http.Request) {
 
 func (h *urlHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	shortURL := r.URL.Path[1:]
-	origURL, err := h.uc.Get(ctx, string(shortURL))
+	slug := r.PathValue("slug")
+	origURL, err := h.uc.Get(ctx, slug)
+  
 	if err != nil {
 		var errResp helpers.ResponseError
 		if errors.As(err, &errResp) {
 			helpers.ResponseBuilder(w, errResp.Code(), errResp.Error(), nil)
 			return
 		}
-		helpers.ResponseBuilder(w, http.StatusFound, err.Error(), nil)
+		helpers.ResponseBuilder(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
-	http.Redirect(w, r, origURL, http.StatusMovedPermanently)
+	http.Redirect(w, r, origURL, http.StatusTemporaryRedirect)
 }
 
 func (h *urlHandlerImpl) Home(html []byte) http.HandlerFunc {
