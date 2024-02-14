@@ -1,12 +1,11 @@
-package storage_test
+package storage
 
 import (
 	"os"
 	"runtime"
 	"testing"
 	"time"
-
-	data "github.com/thansetan/pendekin/storage"
+	// data "github.com/thansetan/pendekin/storage"
 )
 
 var (
@@ -16,21 +15,22 @@ var (
 )
 
 func TestNewStorage(t *testing.T) {
+	var newURLDB *URLData
 	t.Cleanup(func() {
+		newURLDB.Backup() // backup for next test
 		// get rid of newURLDB var
 		runtime.GC()
 	})
 
-	var newURLDB *data.URLData
 	t.Run("create new DB instance (new storage)", func(t *testing.T) {
 		var err error
-		newURLDB, err = data.NewURLDatabase(testStorageName, 5*time.Second)
+		newURLDB, err = NewURLDatabase(testStorageName, 5*time.Second)
 		if err != nil {
 			t.Errorf("got an error : %s", err)
 		}
 
 		if newURLDB == nil {
-			t.Error("expected newURLDB to be *data.URLData, got nil instead")
+			t.Error("expected newURLDB to be *URLData, got nil instead")
 		}
 	})
 
@@ -96,11 +96,10 @@ func TestNewStorage(t *testing.T) {
 			t.Errorf("original URL should be %s, got %s instead", longURL2, URL.OriginalURL)
 		}
 	})
-
 }
 
 func TestLoadStorage(t *testing.T) {
-	var loadURLDB *data.URLData
+	var loadURLDB *URLData
 	t.Cleanup(func() {
 		runtime.GC()
 		os.Remove(testStorageName)
@@ -108,13 +107,13 @@ func TestLoadStorage(t *testing.T) {
 
 	t.Run("create new DB instance (load storage)", func(t *testing.T) {
 		var err error
-		loadURLDB, err = data.NewURLDatabase(testStorageName, 2*time.Second)
+		loadURLDB, err = NewURLDatabase(testStorageName, 2*time.Second)
 		if err != nil {
 			t.Errorf("got an error : %s", err)
 		}
 
 		if loadURLDB == nil {
-			t.Error("expected loadURLDB to be *data.URLData, got nil instead")
+			t.Error("expected loadURLDB to be *URLData, got nil instead")
 		}
 	})
 
@@ -145,3 +144,39 @@ func TestLoadStorage(t *testing.T) {
 	})
 
 }
+
+// var DB *URLData
+
+// func init() {
+// 	DB = &URLData{
+// 		data:        make(map[string]url),
+// 		mu:          new(sync.RWMutex),
+// 		deleteAfter: 5 * time.Second,
+// 		fileName:    "bench",
+// 	}
+// 	DB.StoreNoBackup("a", longURL1)
+// }
+
+// func BenchmarkGet(b *testing.B) {
+// 	for i := 0; i < b.N; i++ {
+// 		_, _ = DB.Get("a")
+// 	}
+// }
+
+// func BenchmarkGetNoBackup(b *testing.B) {
+// 	for i := 0; i < b.N; i++ {
+// 		_, _ = DB.GetNoBackup("a")
+// 	}
+// }
+
+// func BenchmarkStore(b *testing.B) {
+// 	for i := 0; i < b.N; i++ {
+// 		_ = DB.Store("b", longURL2)
+// 	}
+// }
+
+// func BenchmarkStoreNoBackup(b *testing.B) {
+// 	for i := 0; i < b.N; i++ {
+// 		_ = DB.StoreNoBackup("b", longURL2)
+// 	}
+// }

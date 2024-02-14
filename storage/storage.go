@@ -37,7 +37,6 @@ func NewURLDatabase(fileName string, deleteAfter time.Duration) (*URLData, error
 		go urlData.delete()
 		return urlData, nil
 	}
-
 	urlData.data = make(map[string]url)
 	go urlData.delete()
 	return urlData, nil
@@ -45,7 +44,6 @@ func NewURLDatabase(fileName string, deleteAfter time.Duration) (*URLData, error
 
 func (d *URLData) Store(shortURL, longURL string) error {
 	d.mu.Lock()
-	defer d.backup()
 	defer d.mu.Unlock()
 	if URL, ok := d.data[shortURL]; ok {
 		if URL.OriginalURL != longURL {
@@ -63,7 +61,6 @@ func (d *URLData) Store(shortURL, longURL string) error {
 
 func (d *URLData) Get(shortURL string) (url, error) {
 	d.mu.Lock()
-	defer d.backup()
 	defer d.mu.Unlock()
 	if data, ok := d.data[shortURL]; !ok {
 		return data, fmt.Errorf("key %s not found", shortURL)
@@ -86,7 +83,7 @@ func (d *URLData) delete() {
 	}
 }
 
-func (d *URLData) backup() {
+func (d *URLData) Backup() {
 	file, err := os.OpenFile(d.fileName, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		fmt.Println(err)

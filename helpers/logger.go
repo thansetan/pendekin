@@ -13,9 +13,9 @@ func NewLogger(mode string) *slog.Logger {
 
 	switch mode {
 	case "json":
-		logHandler = slog.NewJSONHandler(os.Stdout, opts)
+		logHandler = slog.NewJSONHandler(os.Stderr, opts)
 	case "text":
-		logHandler = slog.NewTextHandler(os.Stdout, opts)
+		logHandler = slog.NewTextHandler(os.Stderr, opts)
 	}
 	logger := slog.New(logHandler)
 
