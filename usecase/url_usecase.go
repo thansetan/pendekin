@@ -21,7 +21,7 @@ type urlUsecaseImpl struct {
 	logger *slog.Logger
 }
 
-func NewURLUsecase(repo repository.URLRepository, logger *slog.Logger) URLUsecase {
+func NewURLUsecase(repo repository.URLRepository, logger *slog.Logger) *urlUsecaseImpl {
 	return &urlUsecaseImpl{
 		repo:   repo,
 		logger: logger,

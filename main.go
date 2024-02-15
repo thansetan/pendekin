@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -30,7 +31,7 @@ func main() {
 		logger.Error("error creating database", "err", err.Error())
 		os.Exit(1)
 	}
-	defer urlDB.Backup()
+	defer urlDB.SaveToDrive()
 
 	repo := repository.NewURLRepository(urlDB)
 	uc := usecase.NewURLUsecase(repo, logger)
@@ -41,7 +42,7 @@ func main() {
 
 	r := http.NewServeMux()
 	r.HandleFunc("GET /", handler.Home(newShortURLHTML))
-	r.HandleFunc("GET /{slug}", middlewares.GetClientIP(handler.Get))
+	r.HandleFunc("GET /{shortURL}", middlewares.GetClientIP(handler.Get))
 	r.HandleFunc("POST /shorten", middlewares.GetClientIP(rl.RateLimitMiddleware(handler.Save)))
 
 	srv := new(http.Server)
@@ -49,7 +50,7 @@ func main() {
 	srv.Handler = r
 
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("error starting server", "err", err.Error())
 			os.Exit(1)
 		}

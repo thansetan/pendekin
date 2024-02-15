@@ -58,9 +58,9 @@ func (h *urlHandlerImpl) Save(w http.ResponseWriter, r *http.Request) {
 
 func (h *urlHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	slug := r.PathValue("slug")
+	slug := r.PathValue("shortURL")
 	origURL, err := h.uc.Get(ctx, slug)
-  
+
 	if err != nil {
 		var errResp helpers.ResponseError
 		if errors.As(err, &errResp) {

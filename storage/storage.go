@@ -9,20 +9,25 @@ import (
 	"time"
 )
 
+type KVStorage interface {
+	Store(string, string) error
+	Get(string) (url, error)
+}
+
 type url struct {
 	OriginalURL  string
 	LastAccessed time.Time
 }
 
-type URLData struct {
+type urlDB struct {
 	data        map[string]url
 	mu          *sync.RWMutex
 	deleteAfter time.Duration
 	fileName    string
 }
 
-func NewURLDatabase(fileName string, deleteAfter time.Duration) (*URLData, error) {
-	urlData := &URLData{
+func NewURLDatabase(fileName string, deleteAfter time.Duration) (*urlDB, error) {
+	urlData := &urlDB{
 		mu:          new(sync.RWMutex),
 		deleteAfter: deleteAfter,
 		fileName:    fileName,
@@ -42,7 +47,7 @@ func NewURLDatabase(fileName string, deleteAfter time.Duration) (*URLData, error
 	return urlData, nil
 }
 
-func (d *URLData) Store(shortURL, longURL string) error {
+func (d *urlDB) Store(shortURL, longURL string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if URL, ok := d.data[shortURL]; ok {
@@ -59,7 +64,7 @@ func (d *URLData) Store(shortURL, longURL string) error {
 	return nil
 }
 
-func (d *URLData) Get(shortURL string) (url, error) {
+func (d *urlDB) Get(shortURL string) (url, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if data, ok := d.data[shortURL]; !ok {
@@ -71,7 +76,7 @@ func (d *URLData) Get(shortURL string) (url, error) {
 	}
 }
 
-func (d *URLData) delete() {
+func (d *urlDB) delete() {
 	for {
 		d.mu.Lock()
 		for key, url := range d.data {
@@ -83,7 +88,7 @@ func (d *URLData) delete() {
 	}
 }
 
-func (d *URLData) Backup() {
+func (d *urlDB) SaveToDrive() {
 	file, err := os.OpenFile(d.fileName, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		fmt.Println(err)

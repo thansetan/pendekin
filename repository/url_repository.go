@@ -8,10 +8,10 @@ type URLRepository interface {
 }
 
 type urlRepositoryImpl struct {
-	urlData *storage.URLData
+	urlData storage.KVStorage
 }
 
-func NewURLRepository(urlData *storage.URLData) URLRepository {
+func NewURLRepository(urlData storage.KVStorage) *urlRepositoryImpl {
 	return &urlRepositoryImpl{
 		urlData: urlData,
 	}

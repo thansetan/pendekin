@@ -5,7 +5,6 @@ import (
 	"runtime"
 	"testing"
 	"time"
-	// data "github.com/thansetan/pendekin/storage"
 )
 
 var (
@@ -15,11 +14,9 @@ var (
 )
 
 func TestNewStorage(t *testing.T) {
-	var newURLDB *URLData
+	var newURLDB *urlDB
 	t.Cleanup(func() {
-		newURLDB.Backup() // backup for next test
-		// get rid of newURLDB var
-		runtime.GC()
+		newURLDB.SaveToDrive() // backup for next test
 	})
 
 	t.Run("create new DB instance (new storage)", func(t *testing.T) {
@@ -99,7 +96,7 @@ func TestNewStorage(t *testing.T) {
 }
 
 func TestLoadStorage(t *testing.T) {
-	var loadURLDB *URLData
+	var loadURLDB *urlDB
 	t.Cleanup(func() {
 		runtime.GC()
 		os.Remove(testStorageName)
@@ -145,10 +142,10 @@ func TestLoadStorage(t *testing.T) {
 
 }
 
-// var DB *URLData
+// var DB *urlDB
 
 // func init() {
-// 	DB = &URLData{
+// 	DB = &urlDB{
 // 		data:        make(map[string]url),
 // 		mu:          new(sync.RWMutex),
 // 		deleteAfter: 5 * time.Second,
