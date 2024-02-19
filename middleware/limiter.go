@@ -1,11 +1,11 @@
-package middlewares
+package middleware
 
 import (
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/thansetan/pendekin/helpers"
+	"github.com/thansetan/pendekin/helper"
 )
 
 type bucket struct {
@@ -68,7 +68,7 @@ func (rl *rateLimiter) RateLimitMiddleware(f http.HandlerFunc) http.HandlerFunc 
 		bucket := rl.ipMap[clientIP]
 
 		if !bucket.allow() {
-			helpers.ResponseBuilder(w, http.StatusTooManyRequests, "rate limit exceeded", nil)
+			helper.ResponseBuilder(w, http.StatusTooManyRequests, "rate limit exceeded", nil)
 			return
 		}
 

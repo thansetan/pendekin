@@ -3,8 +3,8 @@ package repository
 import "github.com/thansetan/pendekin/storage"
 
 type URLRepository interface {
-	Save(longURL, shortURL string) error
-	Get(shortURL string) (string, error)
+	Save(string, string) error
+	Get(string) (string, error)
 }
 
 type urlRepositoryImpl struct {

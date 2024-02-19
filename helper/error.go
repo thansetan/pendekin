@@ -1,9 +1,9 @@
-package helpers
+package helper
 
 import "errors"
 
 var (
-	ErrInternal = errors.New("sorry, there was an error on our side")
+	ErrInternal = errors.New("sorry, there's an error on our side")
 )
 
 type ResponseError struct {

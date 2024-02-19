@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/thansetan/pendekin/handler"
-	"github.com/thansetan/pendekin/helpers"
-	"github.com/thansetan/pendekin/middlewares"
+	"github.com/thansetan/pendekin/helper"
+	"github.com/thansetan/pendekin/middleware"
 	"github.com/thansetan/pendekin/repository"
 	"github.com/thansetan/pendekin/storage"
 	"github.com/thansetan/pendekin/usecase"
@@ -23,7 +23,7 @@ import (
 var newShortURLHTML []byte
 
 func main() {
-	logger := helpers.NewLogger("text")
+	logger := helper.NewLogger("text")
 
 	// a short link will be deleted automatically 7 days after it was last accessed
 	urlDB, err := storage.NewURLDatabase("urlData", 7*24*time.Hour)
@@ -38,16 +38,16 @@ func main() {
 	handler := handler.NewURLHandler(uc)
 
 	// users/each IP can only create 10 shortlinks/day, will reset at 00.00 UTC every day
-	rl := middlewares.NewRateLimiter(10, 24*time.Hour)
+	rl := middleware.NewRateLimiter(10, 24*time.Hour)
 
 	r := http.NewServeMux()
 	r.HandleFunc("GET /", handler.Home(newShortURLHTML))
-	r.HandleFunc("GET /{shortURL}", middlewares.GetClientIP(handler.Get))
-	r.HandleFunc("POST /shorten", middlewares.GetClientIP(rl.RateLimitMiddleware(handler.Save)))
+	r.HandleFunc("GET /{shortURL}", middleware.GetClientIP(http.HandlerFunc(handler.Get)))
+	r.HandleFunc("POST /shorten", middleware.GetClientIP(rl.RateLimitMiddleware(handler.Save)))
 
 	srv := new(http.Server)
-	srv.Addr = ":8080"
-	srv.Handler = r
+	srv.Addr = "0.0.0.0:8080"
+	srv.Handler = middleware.Recover(r, logger)
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -55,7 +55,7 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	fmt.Println("running at http://localhost:8080")
+	fmt.Printf("running at http://%s\n", srv.Addr)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)

@@ -1,9 +1,9 @@
-package utils_test
+package util_test
 
 import (
 	"testing"
 
-	"github.com/thansetan/pendekin/utils"
+	"github.com/thansetan/pendekin/util"
 )
 
 func TestShorten(t *testing.T) {
@@ -12,7 +12,7 @@ func TestShorten(t *testing.T) {
 		shortLength = 5
 	)
 
-	s1, err := utils.Shorten(LongURL, shortLength)
+	s1, err := util.Shorten(LongURL, shortLength)
 	if err != nil {
 		t.Errorf("got an error: %s", err)
 	}
@@ -21,7 +21,7 @@ func TestShorten(t *testing.T) {
 		t.Errorf("shortURL length should be %d, got %d instead", shortLength, len(s1))
 	}
 
-	s2, err := utils.Shorten(LongURL, shortLength)
+	s2, err := util.Shorten(LongURL, shortLength)
 	if err != nil {
 		t.Errorf("got an error: %s", err)
 	}

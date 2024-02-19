@@ -1,9 +1,9 @@
-package utils_test
+package util_test
 
 import (
 	"testing"
 
-	"github.com/thansetan/pendekin/utils"
+	"github.com/thansetan/pendekin/util"
 )
 
 func TestValidateURL(t *testing.T) {
@@ -14,19 +14,19 @@ func TestValidateURL(t *testing.T) {
 		URLWithUnsupportedScheme = "ftp://ftp.example.org"
 	)
 
-	if err := utils.ValidateURL(validURL); err != nil {
+	if err := util.ValidateURL(validURL); err != nil {
 		t.Errorf("error should be nil, got %s instead", err)
 	}
 
-	if err := utils.ValidateURL(URLWithoutTLD); err == nil {
+	if err := util.ValidateURL(URLWithoutTLD); err == nil {
 		t.Error("should return an error, got nil instead")
 	}
 
-	if err := utils.ValidateURL(URLWithoutScheme); err == nil {
+	if err := util.ValidateURL(URLWithoutScheme); err == nil {
 		t.Error("should return an error, got nil instead")
 	}
 
-	if err := utils.ValidateURL(URLWithUnsupportedScheme); err == nil {
+	if err := util.ValidateURL(URLWithUnsupportedScheme); err == nil {
 		t.Error("should return an error, got nil instead")
 	}
 }
