@@ -37,8 +37,8 @@ func main() {
 	uc := usecase.NewURLUsecase(repo, logger)
 	handler := handler.NewURLHandler(uc)
 
-	// users/each IP can only create 10 shortlinks/day, will reset at 00.00 UTC every day
-	rl := middleware.NewRateLimiter(10, 24*time.Hour)
+	// users/each IP can only create 10 shortlinks/day
+	rl := middleware.NewRateLimiter(10, 24*time.Hour, helper.UserIPKey)
 
 	r := http.NewServeMux()
 	r.HandleFunc("GET /", handler.Home(newShortURLHTML))

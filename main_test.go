@@ -48,15 +48,15 @@ func TestApp(t *testing.T) {
 			t.Fatal(err)
 		}
 		if resp.StatusCode != http.StatusOK {
-			t.Errorf("expected response status code to be %d, got %d\n", http.StatusOK, resp.StatusCode)
+			t.Errorf("expected status code to be %d, got %d\n", http.StatusOK, resp.StatusCode)
 		}
 		if contentType := resp.Header.Get("Content-Type"); contentType != "text/html" {
-			t.Errorf("expected content-type to be text/html, got %s instead\n", contentType)
+			t.Errorf("expected content-type to be text/html, got %s\n", contentType)
 		}
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
 		if string(body) != string(newShortURLHTML) {
-			t.Errorf("expected body to be %s, got %s instead\n", string(newShortURLHTML), string(body))
+			t.Errorf("expected body to be %s, got %s\n", string(newShortURLHTML), string(body))
 		}
 	})
 
@@ -77,7 +77,7 @@ func TestApp(t *testing.T) {
 			t.Errorf("expected response status code to be %d, got %d\n", http.StatusCreated, resp.StatusCode)
 		}
 		if contentType := resp.Header.Get("Content-Type"); contentType != "application/json" {
-			t.Errorf("expected content-type to be application/json, got %s instead\n", contentType)
+			t.Errorf("expected content-type to be application/json, got %s\n", contentType)
 		}
 		defer resp.Body.Close()
 		var respData helper.Response[dto.URLResponse]
@@ -86,14 +86,14 @@ func TestApp(t *testing.T) {
 			t.Fatal(err)
 		}
 		if respData.Data.OriginalURL != reqData.OriginalURL {
-			t.Errorf("expected original URL to be %s, got %s instead\n", reqData.OriginalURL, respData.Data.OriginalURL)
+			t.Errorf("expected original URL to be %s, got %s\n", reqData.OriginalURL, respData.Data.OriginalURL)
 		}
 		if len(respData.Data.ShortURL) == 0 {
 			t.Fatal("expected short URL to not be empty\n")
 		}
 		shortURL, _ = util.Shorten(reqData.OriginalURL, len(respData.Data.ShortURL))
 		if respData.Data.ShortURL != shortURL {
-			t.Fatalf("expeced short URL to be %s, got %s instead\n", shortURL, respData.Data.ShortURL)
+			t.Fatalf("expeced short URL to be %s, got %s\n", shortURL, respData.Data.ShortURL)
 		}
 	})
 
@@ -110,10 +110,10 @@ func TestApp(t *testing.T) {
 		}
 
 		if resp.StatusCode != http.StatusTemporaryRedirect {
-			t.Errorf("expected response status code to be %d, got %d instead\n", http.StatusTemporaryRedirect, resp.StatusCode)
+			t.Errorf("expected response status code to be %d, got %d\n", http.StatusTemporaryRedirect, resp.StatusCode)
 		}
 		if finalURL != originalURL {
-			t.Errorf("expected request to redirected to %s, got %s instead\n", originalURL, finalURL)
+			t.Errorf("expected request to redirected to %s, got %s\n", originalURL, finalURL)
 		}
 	})
 }

@@ -9,14 +9,20 @@ import (
 )
 
 type bucket struct {
-	maxToken, token int
+	maxToken, token int64
+	lastRefillTime  time.Time
+	interval        time.Duration
 }
 
-func newBucket(limit int) *bucket {
-	return &bucket{
-		maxToken: limit,
-		token:    limit,
+func newBucket(limit int64, interval time.Duration) *bucket {
+	bucket := &bucket{
+		maxToken:       limit,
+		token:          limit,
+		interval:       interval,
+		lastRefillTime: time.Now(),
 	}
+
+	return bucket
 }
 
 func (b *bucket) take() {
@@ -24,70 +30,56 @@ func (b *bucket) take() {
 }
 
 func (b *bucket) allow() bool {
+	if b.canRefill() {
+		b.refill()
+	}
 	return b.token > 0
 }
 
 func (b *bucket) refill() {
 	b.token = b.maxToken
+	b.lastRefillTime = time.Now()
+}
+
+func (b *bucket) canRefill() bool {
+	return time.Now().After(b.lastRefillTime.Add(b.interval))
 }
 
 type rateLimiter struct {
-	limit      int
+	limit      int64
 	ipMap      map[any]*bucket
 	mu         sync.Mutex
-	lastRefill time.Time
 	interval   time.Duration
+	contextKey any
 }
 
-func NewRateLimiter(limit int, interval time.Duration) *rateLimiter {
+func NewRateLimiter(limit int64, interval time.Duration, contextKey any) *rateLimiter {
 	rl := &rateLimiter{
-		limit: limit,
-		ipMap: make(map[any]*bucket),
-
-		// not the best practice, but at least it works!
-		lastRefill: time.Date(time.Now().UTC().Year(), time.Now().UTC().Month(), time.Now().UTC().Day(), 0, 0, 0, 0, time.UTC),
+		limit:      limit,
+		ipMap:      make(map[any]*bucket),
 		interval:   interval,
+		contextKey: contextKey,
 	}
-
-	go rl.refillAll()
 
 	return rl
 }
 
 func (rl *rateLimiter) RateLimitMiddleware(f http.HandlerFunc) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
+		key := r.Context().Value(rl.contextKey)
 		rl.mu.Lock()
-		defer rl.mu.Unlock()
-		clientIP := r.Context().Value("user_ip")
-
-		if _, ok := rl.ipMap[clientIP]; !ok {
-			rl.ipMap[clientIP] = newBucket(rl.limit)
+		if _, ok := rl.ipMap[key]; !ok {
+			rl.ipMap[key] = newBucket(rl.limit, rl.interval)
 		}
 
-		bucket := rl.ipMap[clientIP]
-
+		bucket := rl.ipMap[key]
 		if !bucket.allow() {
-			helper.ResponseBuilder(w, http.StatusTooManyRequests, "rate limit exceeded", nil)
+			rl.mu.Unlock()
+			helper.ResponseBuilder[any](w, http.StatusTooManyRequests, "rate limit exceeded", nil)
 			return
 		}
-
 		bucket.take()
+		rl.mu.Unlock()
 		f.ServeHTTP(w, r)
-
-	}
-
-}
-
-func (rl *rateLimiter) refillAll() {
-	for {
-		if time.Now().UTC().Sub(rl.lastRefill) >= rl.interval {
-			rl.mu.Lock()
-			for ip := range rl.ipMap {
-				rl.ipMap[ip].refill()
-			}
-			rl.mu.Unlock()
-			rl.lastRefill = rl.lastRefill.Add(rl.interval)
-		}
 	}
 }
