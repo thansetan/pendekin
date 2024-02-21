@@ -29,13 +29,13 @@ func (h *urlHandlerImpl) Save(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		helper.ResponseBuilder(w, http.StatusUnprocessableEntity, err.Error(), nil)
+		helper.ResponseBuilder[error](w, http.StatusUnprocessableEntity, err.Error(), nil)
 		return
 	}
 
 	err = data.Validate()
 	if err != nil {
-		helper.ResponseBuilder(w, http.StatusBadRequest, err.Error(), nil)
+		helper.ResponseBuilder[error](w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -43,14 +43,14 @@ func (h *urlHandlerImpl) Save(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var errResp helper.ResponseError
 		if errors.As(err, &errResp) {
-			helper.ResponseBuilder(w, errResp.Code(), errResp.Error(), nil)
+			helper.ResponseBuilder[error](w, errResp.Code(), errResp.Error(), nil)
 			return
 		}
-		helper.ResponseBuilder(w, http.StatusInternalServerError, err.Error(), nil)
+		helper.ResponseBuilder[error](w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
-	helper.ResponseBuilder(w, http.StatusCreated, "", dto.URLResponse{
+	helper.ResponseBuilder[dto.URLResponse](w, http.StatusCreated, "", dto.URLResponse{
 		OriginalURL: data.OriginalURL,
 		ShortURL:    shortURL,
 	})
@@ -64,10 +64,10 @@ func (h *urlHandlerImpl) Get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var errResp helper.ResponseError
 		if errors.As(err, &errResp) {
-			helper.ResponseBuilder(w, errResp.Code(), errResp.Error(), nil)
+			helper.ResponseBuilder[error](w, errResp.Code(), errResp.Error(), nil)
 			return
 		}
-		helper.ResponseBuilder(w, http.StatusInternalServerError, err.Error(), nil)
+		helper.ResponseBuilder[error](w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 

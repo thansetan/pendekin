@@ -5,13 +5,13 @@ import (
 	"net/http"
 )
 
-type Response struct {
+type Response[T any] struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error,omitempty"`
-	Data    any    `json:"data,omitempty"`
+	Data    T      `json:"data,omitempty"`
 }
 
-func ResponseBuilder(w http.ResponseWriter, code int, err string, data any) {
+func ResponseBuilder[T any](w http.ResponseWriter, code int, err string, data T) {
 	var success bool
 
 	w.Header().Set("Content-Type", "application/json")
@@ -21,7 +21,7 @@ func ResponseBuilder(w http.ResponseWriter, code int, err string, data any) {
 		success = true
 	}
 
-	json.NewEncoder(w).Encode(Response{
+	json.NewEncoder(w).Encode(Response[T]{
 		Success: success,
 		Error:   err,
 		Data:    data,
